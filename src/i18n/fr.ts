@@ -445,8 +445,6 @@ export const FR: Record<string, string> = {
   'Genau im Takt!': 'Pile en rythme !',
   'Gut!': 'Bien !',
   'Geschafft – etwas spät': 'Réussi – un peu en retard',
-  'Gut': 'Bien',
-  'Spät': 'En retard',
   'Gut gemacht!': 'Bien joué !',
   'Weiter üben – langsamer klappt es besser.': 'Continue à t’entraîner – plus lentement, ça marche mieux.',
   'Im Takt: {a} · Gut: {b} · Etwas spät: {c}': 'En rythme : {a} · Bien : {b} · Un peu en retard : {c}',

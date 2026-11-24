@@ -442,8 +442,6 @@ export const EN: Record<string, string> = {
   'Genau im Takt!': 'Right on the beat!',
   'Gut!': 'Good!',
   'Geschafft – etwas spät': 'Done – a little late',
-  'Gut': 'Good',
-  'Spät': 'Late',
   'Gut gemacht!': 'Well done!',
   'Weiter üben – langsamer klappt es besser.': 'Keep practising – slower works better.',
   'Im Takt: {a} · Gut: {b} · Etwas spät: {c}': 'On the beat: {a} · Good: {b} · A little late: {c}',

@@ -2055,6 +2055,556 @@ button.list-row:active {
   font-variant-numeric: tabular-nums;
 }
 
+/* Im Takt: links der Hals mit dem Griff, rechts laufen die Akkorde als Bundzahlen auf den Saiten heran */
+.beat-card {
+  padding: 8px;
+  overflow: hidden;
+}
+
+.highway {
+  display: block;
+}
+
+.hw-beat {
+  stroke: var(--fill-soft);
+  stroke-width: 1;
+}
+
+.hw-bar {
+  stroke: var(--fret);
+  stroke-width: 2;
+}
+
+.hw-now {
+  fill: var(--ink);
+}
+
+.hw-name {
+  font: 800 19px var(--font);
+  fill: var(--ink);
+}
+
+.hw-sustain {
+  fill: var(--accent-soft);
+}
+
+.hw-note {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.hw-note.open {
+  fill: var(--surface);
+  stroke: var(--accent);
+}
+
+.hw-num {
+  font: 800 15px var(--font);
+  fill: var(--on-accent);
+}
+
+.hw-num.open {
+  fill: var(--accent);
+}
+
+.hw-mute {
+  font: 700 15px var(--font);
+  fill: var(--ink-2);
+}
+
+.hw-open-mark {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.hw-event.perfect .hw-sustain,
+.hw-event.good .hw-sustain {
+  fill: var(--accent);
+}
+
+.hw-event.late .hw-sustain {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.hw-event.miss .hw-sustain {
+  fill: var(--fill-soft);
+}
+
+.hw-event.miss .hw-note {
+  fill: var(--fill);
+}
+
+.hw-event.miss .hw-note.open {
+  fill: var(--surface);
+  stroke: var(--fill);
+}
+
+.hw-event.miss .hw-num.open,
+.hw-event.miss .hw-name {
+  fill: var(--ink-2);
+}
+
+.beat-side .row {
+  justify-content: center;
+}
+
+.result-stars .icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 4px;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.lyrics {
+  padding: 14px 18px;
+  min-height: 140px;
+}
+
+.lyric-line {
+  display: none;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 4px 0;
+}
+
+.lyric-line.cur,
+.lyric-line.nxt {
+  display: flex;
+}
+
+.lyric-line.nxt {
+  color: var(--ink-2);
+  font-size: 0.8em;
+}
+
+.syl {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 0.38em;
+  padding: 0 1px;
+}
+
+.syl.join {
+  margin-right: 0;
+}
+
+.syl.join .syl-text::after {
+  content: '-';
+  color: var(--ink-3);
+}
+
+.syl-chord {
+  min-height: 1.1em;
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--ink-2);
+  line-height: 1.1;
+}
+
+.syl-text {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  border-radius: 4px;
+  background-image: linear-gradient(90deg, var(--accent-soft), var(--accent-soft));
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+}
+
+.syl.done .syl-text {
+  color: var(--ink-2);
+}
+
+.syl.now .syl-text {
+  color: var(--accent);
+  background-size: 100% 100%;
+  box-shadow: 0 3px 0 var(--accent);
+}
+
+.syl.now .syl-chord {
+  color: var(--ink);
+}
+
+.syl.now.fill .syl-text {
+  animation-name: fill;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-duration: inherit;
+}
+
+@keyframes fill {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+/* Tabulatur über der Silbe: Bundzahl, je Saite eine Form der Fläche statt eigener Farben */
+.syl-tab {
+  display: none;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 1.2em;
+  padding: 0 5px;
+  border-radius: 6px;
+  color: var(--surface);
+  background: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.with-tab .syl-tab {
+  display: block;
+}
+
+.syl-tab.s0 {
+  background: var(--ink);
+}
+.syl-tab.s1 {
+  background: var(--ink-2);
+}
+.syl-tab.s2 {
+  background: var(--accent);
+}
+.syl-tab.s3 {
+  background: var(--area-band);
+}
+.syl-tab.s4 {
+  background: var(--area-songs);
+}
+.syl-tab.s5 {
+  background: var(--area-games);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.controls > .seg {
+  margin: 4px 10px 8px 0;
+}
+
+.controls > .btn-primary {
+  margin: 4px 10px 8px 0;
+}
+
+.controls h2 {
+  width: 100%;
+  margin: 12px 8px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.more {
+  margin: 4px 8px 4px 0;
+}
+
+.more[open] {
+  width: 100%;
+  margin-right: 0;
+}
+
+.more summary.btn {
+  margin: 0;
+}
+
+.controls .own-tools {
+  width: auto;
+  margin: 0;
+}
+
+.controls .own-tools .btn {
+  margin: 4px 8px 4px 0;
+}
+
+.group.helpers {
+  width: 100%;
+  margin: 0 0 12px;
+}
+
+.more summary {
+  list-style: none;
+  display: inline-flex;
+}
+
+.more summary::-webkit-details-marker {
+  display: none;
+}
+
+.more[open] summary {
+  color: var(--accent);
+}
+
+.more .group {
+  margin: 4px 0 8px;
+}
+
+.more .small {
+  margin: 6px 8px;
+}
+
+/* ---------- Dialoge ---------- */
+.dialog-backdrop {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(28, 28, 30, 0.45);
+}
+
+.dialog {
+  max-width: 520px;
+  width: 100%;
+  padding: 24px;
+  text-align: center;
+  box-shadow: var(--shadow-pop);
+}
+
+.dialog h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.dialog p {
+  margin: 10px 0 14px;
+}
+
+.dialog .row {
+  justify-content: center;
+}
+
+.dialog-icon .icon.big {
+  width: 56px;
+  height: 56px;
+  color: var(--accent);
+}
+
+.help {
+  text-align: left;
+  padding-left: 1.2em;
+}
+
+/* ---------- Stimmgerät ---------- */
+.tuner {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  grid-gap: 16px;
+  gap: 16px;
+  align-items: start;
+}
+
+.tuner-card {
+  text-align: center;
+}
+
+.gauge {
+  width: 100%;
+  max-width: 420px;
+}
+
+.gauge-arc {
+  fill: none;
+  stroke: var(--fill-soft);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.gauge-ok {
+  fill: none;
+  stroke: var(--accent);
+  stroke-opacity: 0.35;
+  stroke-width: 14;
+}
+
+.gauge .tick {
+  stroke: var(--ink-3);
+  stroke-width: 2.5;
+}
+
+.needle {
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: transform 0.12s linear;
+}
+
+.gauge.in-tune .needle {
+  stroke: var(--accent);
+}
+
+.hub {
+  fill: var(--ink);
+}
+
+.tuner-note {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.tuner-side > .btn-primary {
+  width: 100%;
+  margin: 0 0 12px;
+}
+
+.tuner-side > .group {
+  margin: 12px 0;
+}
+
+.string-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 8px;
+  gap: 8px;
+}
+
+/* Banjo: fünf Saiten in einer Reihe; Gitarre: zwei Reihen à drei */
+.string-row.strings-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.string-row.strings-6 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 600px) {
+  .string-row.strings-5 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Handy quer: Griffbilder mit fünf oder sechs Saiten brauchen eine breitere Bühne */
+@media (orientation: landscape) and (max-height: 560px) {
+  [data-strings='5'] .player,
+  [data-strings='6'] .player {
+    grid-template-columns: minmax(330px, 1fr) 1.3fr;
+  }
+}
+
+.btn-string .shint {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  line-height: 1;
+}
+
+.btn-string {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  padding: 8px;
+  min-height: 84px;
+  border-radius: var(--radius);
+}
+
+.btn-string .icon.tick {
+  display: none;
+  margin: 0 0 0 4px;
+  color: var(--accent);
+}
+
+.btn-string.ok .icon.tick {
+  display: inline-block;
+}
+
+.btn-string.active {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.btn-string.active .shint {
+  color: var(--on-accent);
+}
+
+/* ---------- Spiel ---------- */
+.preset-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.best {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.game-run {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  grid-gap: 16px;
+  gap: 16px;
+  align-items: start;
+}
+
+.game-target {
+  text-align: center;
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.score {
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.score.huge {
+  font-size: 96px;
+  letter-spacing: -0.03em;
+}
+
+.time-ring {
+  --p: 1;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, var(--surface) 58%, transparent 60%), conic-gradient(var(--accent) calc(var(--p) * 360deg), var(--fill-soft) 0);
+}
+
+.time {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Im Takt: Akkorde laufen von rechts auf die Linie „jetzt“ zu */
 .beat-card {
   padding: 8px;

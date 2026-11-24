@@ -43,9 +43,9 @@ test('Akkord-Spiel im Takt: erst vorzählen, dann bewertet das Mikrofon den erst
   await page.getByRole('button', { name: /C und Am/ }).click();
   await page.getByRole('button', { name: /Start/ }).click();
   await page.getByRole('button', { name: 'Ja, hör zu!' }).click();
-  await expect(page.locator('.beat-block')).toHaveCount(12);
+  await expect(page.locator('.hw-event')).toHaveCount(12);
   // vier Klicks bei 60 Schlägen pro Minute, dann hört das Mikrofon das C
-  await expect(page.locator('.beat-block').first()).toHaveClass(/perfect|good|late/, { timeout: 12000 });
+  await expect(page.locator('.hw-event').first()).toHaveClass(/perfect|good|late/, { timeout: 12000 });
   await page.getByRole('button', { name: 'Aufhören' }).click();
   await expect(page.getByRole('button', { name: 'Im Takt' })).toHaveAttribute('aria-pressed', 'true');
 });

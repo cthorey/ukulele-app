@@ -9,12 +9,16 @@ test('Akkord-Spiel im Takt ohne Mikrofon: Tempo wählen, Tippen auf „Geschafft
   await page.getByRole('button', { name: 'Langsamer' }).click();
   await page.getByRole('button', { name: /Start/ }).click();
   await page.getByRole('button', { name: 'Ohne Mikrofon' }).click();
-  await expect(page.locator('.beat-block')).toHaveCount(12);
+  await expect(page.locator('.hw-event')).toHaveCount(12);
   // beim Vorzählen zählt Tippen noch nicht
   await page.getByRole('button', { name: 'Geschafft' }).click();
-  await expect(page.locator('.beat-block.perfect, .beat-block.good, .beat-block.late')).toHaveCount(0);
-  await expect(page.locator('.game-target .card-label')).toHaveText('Spiel', { timeout: 8000 });
+  await expect(page.locator('.hw-event.perfect, .hw-event.good, .hw-event.late')).toHaveCount(0);
+  await expect(page.locator('.highway')).toBeVisible();
+  // Griff des ersten Akkords (C: A-Saite, 3. Bund) liegt schon auf dem Hals
+  await expect(page.locator('.highway .fb-mark.now')).toHaveCount(1, { timeout: 6000 });
+  // der Griff erscheint einen Schlag vor dem Einsatz; kurz danach ist der erste Akkord dran
+  await page.waitForTimeout(1500);
   await page.getByRole('button', { name: 'Geschafft' }).click();
-  await expect(page.locator('.beat-block').first()).toHaveClass(/perfect|good|late/);
+  await expect(page.locator('.hw-event').first()).toHaveClass(/perfect|good|late/);
   await expect(page.locator('.stats .score')).not.toHaveText('0');
 });

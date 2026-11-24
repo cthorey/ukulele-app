@@ -2,6 +2,7 @@ import { h, clear, announce } from '../ui/dom.ts';
 import { icon } from '../ui/icons.ts';
 import { screen, button, ensureMic, praise, keepAwake, type View } from '../ui/screen.ts';
 import { playableChord } from '../ui/chord-play.ts';
+import { beatHighway, type Highway } from '../ui/beat-highway.ts';
 import { CHORDS, chord } from '../music/chords.ts';
 import { audio, click, successSound } from '../audio/engine.ts';
 import { listenForChord, type ChordListener } from '../audio/listen.ts';
@@ -26,9 +27,6 @@ import {
 } from '../music/beat-game.ts';
 
 const SECONDS = 60;
-/** Sichtbarer Ausschnitt der Spur in Schlägen; die Linie „jetzt“ steht bei einem Fünftel. */
-const LANE_BEATS = 10;
-const NOW_AT = 0.2;
 
 type Mode = 'time' | 'beat';
 
@@ -257,41 +255,28 @@ export const game: View = (root) => {
     const lag = outputLag();
     let scheduled = 0;
     let expected = -1;
-    let shownIdx = -1;
     let points = 0;
     let finished = false;
 
     const beatNow = () => (audio().currentTime - t0) / beatDur;
 
-    const strip = h('div', { class: 'beat-strip' });
-    const lane = h('div', { class: 'beat-lane', 'aria-hidden': 'true' }, strip, h('div', { class: 'beat-now' }));
-    const blocks = seq.map((c) =>
-      h('div', { class: 'beat-block' }, h('span', { class: 'beat-chord' }, shown(c)), h('span', { class: 'beat-grade' })),
-    );
-    blocks.forEach((b) => strip.appendChild(b));
-    const ticks: HTMLElement[] = [];
-    for (let k = 0; k <= totalBeats; k++) {
-      const tick = h('div', { class: k % 4 === 0 ? 'beat-tick bar' : 'beat-tick' });
-      ticks.push(tick);
-      strip.appendChild(tick);
-    }
-    let laidOutFor = 0;
-    let pxPerBeat = 0;
+    const grips = seq.map((c) => chord(c));
+    const starts = seq.map((_, i) => startBeat(i, bpc));
+    const laneCard = h('div', { class: 'card beat-card' });
+    let hw: Highway | null = null;
+    let hwWidth = 0;
+    let lastCur = -2;
     const layout = () => {
-      const w = lane.clientWidth;
-      if (!w || w === laidOutFor) return;
-      laidOutFor = w;
-      pxPerBeat = w / LANE_BEATS;
-      blocks.forEach((b, i) => {
-        b.style.left = startBeat(i, bpc) * pxPerBeat + 'px';
-        b.style.width = bpc * pxPerBeat - 4 + 'px';
-      });
-      ticks.forEach((tick, k) => (tick.style.left = k * pxPerBeat + 'px'));
+      const w = laneCard.clientWidth - 16;
+      if (w <= 0 || w === hwWidth) return;
+      hwWidth = w;
+      hw = beatHighway(w, grips, starts, bpc, totalBeats, lefty);
+      grades.forEach((gr, i) => gr && hw!.mark(i, gr));
+      clear(laneCard);
+      laneCard.appendChild(hw.el);
+      lastCur = -2;
     };
 
-    const label = h('div', { class: 'card-label' }, t('Gleich'));
-    const name = h('div', { class: 'chord-name huge' }, shown(seq[0]));
-    const diag = h('div', { class: 'diagram-big' }, playableChord(chord(seq[0]), { lefty }));
     const scoreEl = h('div', { class: 'score', 'aria-live': 'polite' }, '0');
     const countEl = h('div', { class: 'time' }, '0/' + CHANGES);
     const msg = h('div', { class: 'feedback' }, t('Hör auf den Klick: eins, zwei, drei, vier …'));
@@ -307,8 +292,7 @@ export const game: View = (root) => {
       points += g === 'perfect' ? 3 : g === 'good' ? 2 : g === 'late' ? 1 : 0;
       scoreEl.textContent = String(points);
       countEl.textContent = grades.filter((x) => x !== null).length + '/' + CHANGES;
-      blocks[i].classList.add(g);
-      (blocks[i].lastChild as HTMLElement).textContent = g === 'perfect' ? t('Im Takt') : g === 'good' ? t('Gut') : g === 'late' ? t('Spät') : '';
+      hw?.mark(i, g);
       if (g !== 'miss') msg.textContent = g === 'good' ? praise() : GRADE_TEXT[g];
     };
     const hit = (heard: boolean) => {
@@ -372,17 +356,12 @@ export const game: View = (root) => {
     const frame = () => {
       layout();
       const beat = beatNow();
-      strip.style.transform = 'translateX(' + (NOW_AT * LANE_BEATS - beat) * pxPerBeat + 'px)';
-      // ein Schlag vor dem Wechsel schon den nächsten Griff zeigen, damit die Finger sich bereit machen
-      const s = Math.max(0, Math.min(CHANGES - 1, Math.floor((beat - COUNT_IN + 1) / bpc)));
-      if (s !== shownIdx) {
-        shownIdx = s;
-        name.textContent = shown(seq[s]);
-        diag.replaceChild(playableChord(chord(seq[s]), { lefty }), diag.firstChild!);
-        announce(shown(seq[s]));
-        blocks.forEach((b, i) => b.classList.toggle('next', i === s));
-      }
-      label.textContent = beat < startBeat(s, bpc) ? t('Gleich') : t('Spiel');
+      // gegriffen wird der Akkord bis kurz vor dem nächsten Einsatz; einen Schlag vorher erscheint der nächste blass
+      const cur = Math.max(0, Math.min(CHANGES - 1, Math.floor((beat - COUNT_IN + 0.25) / bpc)));
+      const nxt = cur + 1 < CHANGES && beat >= startBeat(cur + 1, bpc) - 1 ? cur + 1 : beat < COUNT_IN ? 0 : -1;
+      hw?.update(beat, beat < COUNT_IN - 1 ? -1 : cur, nxt);
+      if (cur !== lastCur) announce(shown(seq[cur]));
+      lastCur = cur;
       if (beat < COUNT_IN) msg.textContent = beat < 0 ? t('Hör auf den Klick: eins, zwei, drei, vier …') : String(Math.floor(beat) + 1) + ' …';
       if (!finished) raf = requestAnimationFrame(frame);
     };
@@ -391,27 +370,27 @@ export const game: View = (root) => {
       h(
         'div',
         { class: 'game-beat' },
-        h('div', { class: 'card beat-card' }, lane),
+        laneCard,
         h(
           'div',
-          { class: 'game-run' },
-          h('div', { class: 'card game-target' }, label, name, diag),
+          { class: 'beat-side' },
           h(
             'div',
-            { class: 'game-side' },
-            h(
-              'div',
-              { class: 'card stats' },
-              h('div', null, h('div', { class: 'card-label' }, t('Punkte')), scoreEl),
-              h('div', null, h('div', { class: 'card-label' }, t('Wechsel')), countEl),
-            ),
-            msg,
+            { class: 'card stats' },
+            h('div', null, h('div', { class: 'card-label' }, t('Punkte')), scoreEl),
+            h('div', null, h('div', { class: 'card-label' }, t('Wechsel')), countEl),
+          ),
+          msg,
+          h(
+            'div',
+            { class: 'row' },
             button(h('span', null, icon('check'), ' ', t('Geschafft')), () => hit(false), mic ? '' : 'btn-primary'),
             button(t('Aufhören'), setup, ''),
           ),
         ),
       ),
     );
+    layout();
     if (mic) listener = await listenForChord(seq[0], { onHit: () => hit(true) }).catch(() => null);
     timer = window.setInterval(tick, 25);
     tick();
