@@ -3235,6 +3235,23 @@ button.list-row:active {
   stroke-width: 3;
 }
 
+.fb-mark.bg {
+  fill: var(--ink-3);
+  opacity: 0.35;
+}
+
+.hw-chord {
+  font-size: 17px;
+  fill: var(--ink-2);
+}
+
+.hw-change {
+  stroke: var(--ink-3);
+  stroke-width: 2;
+  stroke-dasharray: 3 4;
+  opacity: 0.6;
+}
+
 .fb-mark.next {
   fill: var(--accent-soft);
   stroke: var(--accent);

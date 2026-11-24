@@ -137,16 +137,11 @@ https://github.com/bartfastiel/ukulele-app/issues – betroffene Inhalte werden 
 | Loch Lomond | Schottisch traditionell, gedruckt 1841 | Schottisch traditionell, gedruckt 1841 | traditionell/anonym | Text nach Camp-Fire Choruses (1916, archive.org) ([Link](https://archive.org/details/campfirechoruses00jone)) | – (nur Akkorde und Text) |
 | Auld Lang Syne | Robert Burns (1759–1796) | traditionell | 1867 | Text nach Camp-Fire Choruses (1916, archive.org) ([Link](https://archive.org/details/campfirechoruses00jone)) | – (nur Akkorde und Text) |
 
-## Hawaiʻi
-
-| Lied | Text | Melodie | Gemeinfrei seit | Textquelle | Melodiequelle |
-| --- | --- | --- | --- | --- | --- |
-| Aloha ʻOe | Liliʻuokalani (1838–1917), Königin von Hawaiʻi, 1878 | Liliʻuokalani (1838–1917), Königin von Hawaiʻi, 1878 | 1988 | Text nach dem Wikipedia-Artikel „Aloha ʻOe“ (Handschrift von 1878 im Hawaiʻi State Archives) ([Link](https://en.wikipedia.org/wiki/Aloha_%CA%BBOe)) | – (nur Akkorde und Text) |
-| Hawaiʻi Ponoʻī | König Kalākaua (1836–1891), 1874 | Henri Berger (1844–1929) | 2000 | Text nach dem Wikipedia-Artikel „Hawaiʻi Ponoʻī“ ([Link](https://en.wikipedia.org/wiki/Hawai%CA%BBi_Pono%CA%BB%C4%AB)) | – (nur Akkorde und Text) |
-
 ## Eigene Lieder
 
 | Lied | Text | Melodie | Gemeinfrei seit | Textquelle | Melodiequelle |
 | --- | --- | --- | --- | --- | --- |
 | G-C-E-A (das Saiten-Lied) | eigenes Lied | eigenes Lied | eigenes Lied (CC0) | eigenes Lied (CC0) | eigenes Lied (CC0) |
 | Am Lagerfeuer | eigenes Lied | eigenes Lied | eigenes Lied (CC0) | eigenes Lied (CC0) | eigenes Lied (CC0) |
+| Aloha ʻOe | Liliʻuokalani (1838–1917), Königin von Hawaiʻi, 1878 | Liliʻuokalani (1838–1917), Königin von Hawaiʻi, 1878 | 1988 | Text nach dem Wikipedia-Artikel „Aloha ʻOe“ (Handschrift von 1878 im Hawaiʻi State Archives) ([Link](https://en.wikipedia.org/wiki/Aloha_%CA%BBOe)) | – (nur Akkorde und Text) |
+| Hawaiʻi Ponoʻī | König Kalākaua (1836–1891), 1874 | Henri Berger (1844–1929) | 2000 | Text nach dem Wikipedia-Artikel „Hawaiʻi Ponoʻī“ ([Link](https://en.wikipedia.org/wiki/Hawai%CA%BBi_Pono%CA%BB%C4%AB)) | – (nur Akkorde und Text) |

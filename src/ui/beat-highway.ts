@@ -32,6 +32,8 @@ export interface HighwayOptions {
   ahead?: number;
   /** so viele Pixel braucht ein Schlag mindestens (Melodie: Silben dürfen sich nicht überlappen) */
   minBeatPx?: number;
+  /** Akkorde hinter der Melodie: Name und Wechsel auf der Spur, der Griff blass auf dem Hals */
+  chords?: HwEvent[];
 }
 
 export interface Highway {
@@ -75,7 +77,8 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
   const loop = opts.loop || 0;
   const n = STRINGS.length;
   const gap = n > 4 ? 28 : 38;
-  const top = 44;
+  const chords = opts.chords || [];
+  const top = chords.length ? 66 : 44;
   const span = gap * (n - 1);
   const strums = events.some((e) => !!e.strum);
   const height = top + span + (strums ? 52 : 30);
@@ -158,11 +161,21 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
       });
       if (e.label) ev.appendChild(text({ x: x - (e.single ? 0 : 10), y: top - 20, 'text-anchor': e.single ? 'middle' : 'start', class: e.single ? 'hw-name syl' : 'hw-name' }, e.label));
     });
+  chords.forEach((e) => {
+    if (e.repeat) return;
+    const x = e.beat * ppb;
+    strip.appendChild(s('line', { x1: x, y1: top - 50, x2: x, y2: top + span + 12, class: 'hw-change' }));
+    strip.appendChild(text({ x: x + 4, y: top - 38, class: 'hw-name hw-chord' }, e.label));
+  });
   g.appendChild(s('rect', { x: nowX - 2, y: top - 22, width: 4, height: span + 34, rx: 2, class: 'hw-now' }));
 
-  const drawGrip = (e: HwEvent, kind: 'now' | 'next') => {
+  const drawGrip = (e: HwEvent, kind: 'now' | 'next' | 'bg') => {
     e.frets.forEach((f, string) => {
       const y = yOf(string);
+      if (kind === 'bg') {
+        if (f > 0 && f <= frets) marks.appendChild(s('circle', { cx: fretX(f), cy: y, r: 10, class: 'fb-mark bg' }));
+        return;
+      }
       if (f < 0) {
         if (kind === 'now' && !e.single) marks.appendChild(text({ x: openX, y: y + 5, 'text-anchor': 'middle', class: 'hw-mute' }, '×'));
         return;
@@ -191,10 +204,12 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
       if (nextBeat - beat > 1) nxt = -1;
       // ein einzelner Ton gilt nur, solange er klingt; danach ist der Hals leer, bis der nächste kommt
       const live = cur >= 0 && (!events[cur].single || beat < events[cur].beat + events[cur].dur) ? cur : -1;
-      const key = live + '/' + nxt;
+      const chord = chords.length ? eventIndexAt(chords, beat) : -1;
+      const key = live + '/' + nxt + '/' + chord;
       if (key === shown) return;
       shown = key;
       while (marks.firstChild) marks.removeChild(marks.firstChild);
+      if (chord >= 0) drawGrip(chords[chord], 'bg');
       if (nxt >= 0 && nxt !== live) drawGrip(events[nxt], 'next');
       if (live >= 0) drawGrip(events[live], 'now');
       groups.forEach((gs, i) => gs.forEach((ev) => ev.classList.toggle('cur', i === live)));

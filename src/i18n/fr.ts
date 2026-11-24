@@ -122,7 +122,6 @@ export const FR: Record<string, string> = {
   'Lagerfeuer & Wandern': 'Feu de camp & randonnée',
   'Frühling bis Herbst': 'Du printemps à l’automne',
   'Weihnachten': 'Noël',
-  'Hawaiʻi': 'Hawaï',
   'English Songs': 'Chansons anglaises',
   'Eigene Lieder': 'Mes chansons',
   // Weihnachtslieder (src/site/pages.ts, src/views/home.ts, src/main.ts)
@@ -511,7 +510,7 @@ export const FR: Record<string, string> = {
   'Ansicht': 'Affichage',
   'Karten': 'Cartes',
   'Hals: Akkorde': 'Manche : accords',
-  'Hals: Melodie': 'Manche : mélodie',
+  'Hals: Melodie + Akkorde': 'Manche : mélodie + accords',
   'Hals: Basslinie': 'Manche : ligne de basse',
   'Original': 'Original',
   'Liedtext': 'Paroles',

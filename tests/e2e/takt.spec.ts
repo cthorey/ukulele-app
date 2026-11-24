@@ -23,11 +23,12 @@ test('Akkord-Spiel im Takt ohne Mikrofon: Tempo wählen, Tippen auf „Geschafft
   await expect(page.locator('.stats .score')).not.toHaveText('0');
 });
 
-test('Lied mit Hals: Melodie läuft mit Silben auf den Saiten heran, Akkorde als Griffe, zurück zu den Karten', async ({ page }) => {
+test('Lied mit Hals: Melodie läuft mit Silben auf den Saiten heran, die Akkorde dahinter, Akkorde als Griffe, zurück zu den Karten', async ({ page }) => {
   await page.goto('#/lied/row-row');
-  await page.getByRole('button', { name: 'Hals: Melodie' }).click();
+  await page.getByRole('button', { name: 'Hals: Melodie + Akkorde' }).click();
   await expect(page.locator('.hw-stage .highway')).toBeVisible();
   await expect(page.locator('.hw-stage .hw-name.syl').first()).toHaveText('Row,');
+  await expect(page.locator('.hw-stage .hw-chord').first()).toHaveText('C');
   await expect(page.locator('.now-card')).toBeHidden();
   await page.getByRole('button', { name: 'Hals: Akkorde' }).click();
   await expect(page.locator('.hw-stage .hw-name').first()).toHaveText('C');

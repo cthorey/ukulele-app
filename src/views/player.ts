@@ -192,7 +192,7 @@ class Player {
         { label: t('Karten'), active: this.settings.track === 'cards', on: () => this.setTrack('cards') },
         { label: t('Hals: Akkorde'), active: this.settings.track === 'chords', on: () => this.setTrack('chords') },
         ...(this.song.hasMelody || this.bass
-          ? [{ label: this.bass ? t('Hals: Basslinie') : t('Hals: Melodie'), active: this.settings.track === 'melody', on: () => this.setTrack('melody') }]
+          ? [{ label: this.bass ? t('Hals: Basslinie') : t('Hals: Melodie + Akkorde'), active: this.settings.track === 'melody', on: () => this.setTrack('melody') }]
           : []),
       ]),
       (this.modeSeg = seg(t('Modus'), [
@@ -937,6 +937,7 @@ class Player {
         const s = this.song;
         // 6/8: ein Schlag ist eine Achtel, also doppelt so viele sichtbar
         const eighths = s.meter === 6 ? 2 : 1;
+        const backdrop = kind === 'melody' && !this.bass ? this.trackEvents('chords') : undefined;
         this.hwEvents = this.trackEvents(kind);
         this.hwScore = this.hwEvents.map(() => null);
         this.missPtr = 0;
@@ -947,6 +948,7 @@ class Player {
           barOffset: s.pickup ? s.pickup - s.meter : 0,
           ahead: (kind === 'melody' ? 6 : 8) * eighths,
           minBeatPx: (kind === 'melody' ? 90 : 50) / eighths,
+          chords: backdrop,
         });
         clear(this.hwCard);
         this.hwCard.appendChild(this.hwHead);

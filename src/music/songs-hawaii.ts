@@ -8,7 +8,7 @@ export const HAWAII_SONGS: SongSource[] = [
   {
     id: 'aloha-oe',
     title: 'Aloha ʻOe',
-    category: 'hawaii',
+    category: 'eigene',
     origin: 'Text und Melodie Liliʻuokalani (1838–1917), Königin von Hawaiʻi, 1878; Text nach dem Wikipedia-Artikel „Aloha ʻOe“ (Handschrift von 1878 im Hawaiʻi State Archives)',
     textUrl: 'https://en.wikipedia.org/wiki/Aloha_%CA%BBOe',
     meter: 4,
@@ -43,7 +43,7 @@ un[G7]til we meet a[C]gain.`,
   {
     id: 'hawaii-ponoi',
     title: 'Hawaiʻi Ponoʻī',
-    category: 'hawaii',
+    category: 'eigene',
     origin: 'Text König Kalākaua (1836–1891), 1874, Melodie Henri Berger (1844–1929); Text nach dem Wikipedia-Artikel „Hawaiʻi Ponoʻī“',
     textUrl: 'https://en.wikipedia.org/wiki/Hawai%CA%BBi_Pono%CA%BB%C4%AB',
     meter: 4,
