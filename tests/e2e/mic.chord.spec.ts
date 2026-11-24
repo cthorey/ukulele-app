@@ -37,6 +37,19 @@ test('Akkord-Spiel zählt erkannte Akkorde', async ({ page }) => {
   await expect(page.locator('.game-target .chord-name')).toHaveText('F');
 });
 
+test('Akkord-Spiel im Takt: erst vorzählen, dann bewertet das Mikrofon den ersten Wechsel', async ({ page }) => {
+  await page.goto('#/spiel');
+  await page.getByRole('button', { name: 'Im Takt' }).click();
+  await page.getByRole('button', { name: /C und Am/ }).click();
+  await page.getByRole('button', { name: /Start/ }).click();
+  await page.getByRole('button', { name: 'Ja, hör zu!' }).click();
+  await expect(page.locator('.beat-block')).toHaveCount(12);
+  // vier Klicks bei 60 Schlägen pro Minute, dann hört das Mikrofon das C
+  await expect(page.locator('.beat-block').first()).toHaveClass(/perfect|good|late/, { timeout: 12000 });
+  await page.getByRole('button', { name: 'Aufhören' }).click();
+  await expect(page.getByRole('button', { name: 'Im Takt' })).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('Blues: Akkorde begleiten – das Mikrofon hört das C im ersten Takt', async ({ page }) => {
   await page.goto('#/blues');
   await page.getByRole('button', { name: 'Akkorde · leicht' }).click();

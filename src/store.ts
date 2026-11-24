@@ -6,6 +6,8 @@ export interface Progress {
   /** Übungstage als YYYY-MM-DD (Ortszeit). */
   days: string[];
   bestHunt: Record<string, number>;
+  /** Akkord-Spiel im Takt je Akkordfolge und Wechsel („C-Am/4“): erreichtes Tempo und beste Sterne. */
+  beatGame: Record<string, { bpm: number; stars: number }>;
   /** Gewählte Transposition je Lied in Halbtönen (0 = einfache Standardtonart). */
   keys: Record<string, number>;
   chordsChecked: string[];
@@ -125,6 +127,7 @@ const DEFAULTS: Progress = {
   stars: {},
   days: [],
   bestHunt: {},
+  beatGame: {},
   keys: {},
   chordsChecked: [],
   tunedStrings: 0,
@@ -160,7 +163,7 @@ export function load(): Progress {
   } catch {
     data = {};
   }
-  cache = { ...DEFAULTS, ...data, keys: { ...(data.keys || {}) }, settings: { ...DEFAULTS.settings, ...(data.settings || {}) } };
+  cache = { ...DEFAULTS, ...data, keys: { ...(data.keys || {}) }, beatGame: { ...(data.beatGame || {}) }, settings: { ...DEFAULTS.settings, ...(data.settings || {}) } };
   cache.settings.lefty = readShared().lefty;
   return cache;
 }
