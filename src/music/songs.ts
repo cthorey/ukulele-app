@@ -3,6 +3,7 @@ import { CHORD_SONGS } from './songs-chordpro.ts';
 import { KINDER_SONGS } from './songs-kinder.ts';
 import { ENGLISH_SONGS } from './songs-english.ts';
 import { HAWAII_SONGS } from './songs-hawaii.ts';
+import { LOCAL_SONGS } from './songs-local.ts';
 import { CHRISTMAS_SONGS } from './songs-weihnachten.ts';
 import { MELODIES } from './songs-melodies.ts';
 
@@ -265,7 +266,7 @@ function withMelody(src: SongSource): SongSource {
   };
 }
 
-export const SONGS: Song[] = SONG_SOURCES.concat(CHORD_SONGS, KINDER_SONGS, ENGLISH_SONGS, HAWAII_SONGS, CHRISTMAS_SONGS).map(withMelody).map(parseSong);
+export const SONGS: Song[] = SONG_SOURCES.concat(CHORD_SONGS, KINDER_SONGS, ENGLISH_SONGS, HAWAII_SONGS, CHRISTMAS_SONGS, LOCAL_SONGS).map(withMelody).map(parseSong);
 
 export function song(id: string): Song | undefined {
   return SONGS.find((s) => s.id === id);

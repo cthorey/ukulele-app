@@ -41,6 +41,8 @@ export interface SongSource {
   chordpro?: string;
   /** Lied mit importierter Melodie (nur 1. Strophe): der ganze Text mit Akkorden im ChordPro-Stil, alle Strophen. */
   lyrics?: string;
+  /** Nur in der eigenen Arbeitskopie (songs-local.ts): nicht im Repo, ohne Quellenprüfung. */
+  local?: boolean;
 }
 
 export interface SongEvent {

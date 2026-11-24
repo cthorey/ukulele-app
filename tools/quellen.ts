@@ -2,7 +2,9 @@
 // Text und Melodie (aus `origin`, `textUrl` und `melodyUrl` der Lieder). Der Unit-Test prüft, dass die Datei aktuell ist.
 //   node tools/quellen.ts
 import { writeFileSync } from 'node:fs';
-import { SONGS } from '../src/music/songs.ts';
+import { SONGS as ALL } from '../src/music/songs.ts';
+
+const SONGS = ALL.filter((s) => !s.local);
 import { CATEGORIES, type Song } from '../src/music/song.ts';
 import { WIKI } from './melody/sources.ts';
 

@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { SONGS } from '../../src/music/songs.ts';
+import { SONGS as ALL } from '../../src/music/songs.ts';
+
+const SONGS = ALL.filter((s) => !s.local);
 import { MELODIES } from '../../src/music/songs-melodies.ts';
 import { QUELLEN_FILE, sourceRows, sourcesMarkdown } from '../../tools/quellen.ts';
 
