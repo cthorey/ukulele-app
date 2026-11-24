@@ -93,6 +93,7 @@ class Player {
   private hwKey = '';
   private hwRaf = 0;
   private hwHead!: HTMLElement;
+  private modeSeg!: HTMLElement;
   private hwScoreEl!: HTMLElement;
   private hwEvents: HwEvent[] = [];
   /** je Ereignis: Akkordname (Akkord-Spur) bzw. MIDI-Ton (Melodie-Spur) */
@@ -194,10 +195,10 @@ class Player {
           ? [{ label: this.bass ? t('Hals: Basslinie') : t('Hals: Melodie'), active: this.settings.track === 'melody', on: () => this.setTrack('melody') }]
           : []),
       ]),
-      seg(t('Modus'), [
+      (this.modeSeg = seg(t('Modus'), [
         { label: t('Wartet auf mich'), active: this.settings.waitMode, on: () => this.setMode(true) },
         { label: t('Läuft durch'), active: !this.settings.waitMode, on: () => this.setMode(false) },
-      ]),
+      ])),
       seg(
         t('Tempo'),
         SPEEDS.map((sp) => ({ label: t(sp.label), active: Math.abs(this.settings.speed - sp.value) < 0.01, on: () => this.setSpeed(sp.value) })),
@@ -419,7 +420,7 @@ class Player {
     this.highlight(-1);
     this.showChords(0);
     if (!this.releaseWake) this.releaseWake = keepAwake();
-    if (this.settings.waitMode) {
+    if (this.waits()) {
       this.micOk = await ensureMic();
       this.enterWait(0);
     } else {
@@ -441,7 +442,7 @@ class Player {
     this.start = ctx.currentTime + 0.12 + lead * this.spb - from * this.spb;
     this.scheduledTo = from - lead;
     this.phase = countIn ? 'countin' : 'playing';
-    this.stopBeat = this.settings.waitMode ? this.nextChangeAfter(from) : Infinity;
+    this.stopBeat = this.waits() ? this.nextChangeAfter(from) : Infinity;
     this.setPlayLabel();
     window.clearInterval(this.timer);
     this.timer = window.setInterval(() => this.schedule(), 25);
@@ -585,12 +586,12 @@ class Player {
       this.updateScore(true);
     }
     this.highlight(this.song.events.length - 1);
-    const stars = this.settings.waitMode ? 1 : this.settings.speed >= 1 ? 3 : 2;
+    const stars = this.waits() ? 1 : this.settings.speed >= 1 ? 3 : 2;
     const improved = giveStars(this.song.id, stars);
     markPracticed();
     successSound();
     const total = load().stars[this.song.id] || 0;
-    const next = this.settings.waitMode
+    const next = this.waits()
       ? t('Nächster Stern: Spiel es mit „Läuft durch“.')
       : this.settings.speed < 1
         ? t('Nächster Stern: Spiel es im Original-Tempo.')
@@ -625,6 +626,11 @@ class Player {
         h('span', { class: 'lbl' }, playing ? t('Pause') : this.phase === 'paused' ? t('Weiter') : this.phase === 'waiting' ? t('Geschafft') : t('Los geht’s')),
       ),
     );
+  }
+
+  /** Am Akkordwechsel anhalten? Nur bei den Karten – auf dem Hals läuft das Lied durch und das Mikrofon bewertet live. */
+  private waits(): boolean {
+    return this.settings.waitMode && this.trackKind() === 'cards';
   }
 
   private setMode(wait: boolean): void {
@@ -784,14 +790,18 @@ class Player {
   }
 
   private setTrack(k: 'cards' | 'chords' | 'melody'): void {
+    save((p) => (p.settings.track = k));
+    // wartet das Lied gerade auf einen Akkord, geht es mit dem Hals nicht weiter – also neu beginnen
+    if (this.phase === 'waiting') this.reset();
     this.stopTrackListen();
     this.hwHead.hidden = true;
-    save((p) => (p.settings.track = k));
     this.applyTrack();
   }
 
   private applyTrack(): void {
     this.stage.classList.toggle('neck-view', this.trackKind() !== 'cards');
+    // „Wartet auf mich“ gibt es nur bei den Karten
+    this.modeSeg.style.display = this.trackKind() === 'cards' ? '' : 'none';
     if (this.stage.parentElement) this.stage.parentElement.classList.toggle('player-neck', this.trackKind() !== 'cards');
     this.hwKey = '';
   }

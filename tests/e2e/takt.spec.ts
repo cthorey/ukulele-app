@@ -50,3 +50,19 @@ test('Blues: beim Akkorde-Begleiten laufen die zwölf Takte als Griffe auf den S
   expect(await page.locator('.beat-card .hw-event').count()).toBeGreaterThanOrEqual(2 * 12 * 4);
   await expect(page.locator('.beat-card .hw-arrow').first()).toHaveText('↓');
 });
+
+test('Lied mit Hals: läuft ohne Anhalten durch, auch wenn vorher „Wartet auf mich“ gewählt war', async ({ page }) => {
+  await page.goto('#/lied/row-row');
+  await page.getByRole('button', { name: 'Wartet auf mich' }).click();
+  await page.getByRole('button', { name: 'Hals: Akkorde' }).click();
+  await expect(page.getByRole('button', { name: 'Wartet auf mich' })).toBeHidden();
+  await page.locator('.btn-play').click();
+  await page.getByRole('button', { name: 'Ohne Mikrofon' }).click();
+  // Einzähler und erster Akkordwechsel vorbei: kein „Spiel jetzt …“, das Lied läuft
+  await page.waitForTimeout(6000);
+  await expect(page.locator('.wait-title')).toHaveCount(0);
+  await expect(page.locator('.btn-play')).toContainText('Pause');
+  // zurück zu den Karten: „Wartet auf mich“ ist wieder da
+  await page.getByRole('button', { name: 'Karten' }).click();
+  await expect(page.getByRole('button', { name: 'Wartet auf mich' })).toBeVisible();
+});
