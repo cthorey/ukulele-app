@@ -504,6 +504,11 @@ export const FR: Record<string, string> = {
   'Löschen': 'Supprimer',
   'Lied bearbeiten': 'Modifier la chanson',
   // src/views/player.ts
+  'Ansicht': 'Affichage',
+  'Karten': 'Cartes',
+  'Hals: Akkorde': 'Manche : accords',
+  'Hals: Melodie': 'Manche : mélodie',
+  'Hals: Basslinie': 'Manche : ligne de basse',
   'Original': 'Original',
   'Liedtext': 'Paroles',
   'Los geht’s': 'C’est parti',

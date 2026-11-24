@@ -501,6 +501,11 @@ export const EN: Record<string, string> = {
   'Löschen': 'Delete',
   'Lied bearbeiten': 'Edit Song',
   // src/views/player.ts
+  'Ansicht': 'View',
+  'Karten': 'Cards',
+  'Hals: Akkorde': 'Neck: chords',
+  'Hals: Melodie': 'Neck: melody',
+  'Hals: Basslinie': 'Neck: bass line',
   'Original': 'Original',
   'Liedtext': 'Lyrics',
   'Los geht’s': 'Let’s go',

@@ -9,6 +9,7 @@ import { audio, click, hold, pluck, setWah, strum } from '../audio/engine.ts';
 import { hasMotion, watchTilt } from '../audio/motion.ts';
 import { hearingOwnSound, holdOwnSound, markOwnSound } from '../audio/own-sound.ts';
 import { playableChord } from '../ui/chord-play.ts';
+import { beatHighway, chordEvent, type Highway, type HwEvent } from '../ui/beat-highway.ts';
 import { chordDiagram } from '../ui/chord-diagram.ts';
 import { listenForChord, type ChordListener } from '../audio/listen.ts';
 import { fingerDown, type Play } from '../ui/fret-gesture.ts';
@@ -90,6 +91,29 @@ export const blues: View = (root) => {
   const pattern = h('div', { class: 'arrows groove-pattern', 'aria-hidden': 'true' });
   const patternCard = h('div', { class: 'card groove-pattern-card blues-strum' }, pattern);
   const info = h('p', { class: 'card blues-info' });
+  // Akkorde begleiten: die zwölf Takte laufen als Griffe auf den Saiten heran, immer wieder von vorn
+  const hwCard = h('div', { class: 'card beat-card' });
+  let hw: Highway | null = null;
+  let hwKey = '';
+  let hwRaf = 0;
+  const hwFrame = () => {
+    hwCard.style.display = comp ? '' : 'none';
+    if (comp) {
+      const w = hwCard.clientWidth - 16;
+      const k = [w, key, comp.title].join('|');
+      if (w > 0 && k !== hwKey) {
+        hwKey = k;
+        const bars = compBars(key, comp);
+        // jeder Takt eine eigene Spalte, auch wenn der Akkord bleibt: jeder Takt wird neu angeschlagen
+        const events: HwEvent[] = bars.map((name, i) => chordEvent(compGrip(name), i * 4, 4, i > 0 && name === bars[i - 1] ? '' : name));
+        hw = beatHighway(events, { width: w, lefty, loop: 48, ahead: 8 });
+        clear(hwCard);
+        hwCard.appendChild(hw.el);
+      }
+      if (hw) hw.update(running ? beatNow() : 0);
+    }
+    hwRaf = requestAnimationFrame(hwFrame);
+  };
   const counter = h('div', { class: 'feedback', 'aria-live': 'polite' }, t('Tippe auf „Start“ – die Band zählt ein.'));
   const playBtn = button('', () => (running ? stop() : go()), 'btn-primary btn-play');
 
@@ -555,6 +579,7 @@ export const blues: View = (root) => {
     root,
     { title: t('Blues') },
     h('div', { class: 'blues-top' }, grid, neckCard),
+    hwCard,
     patternCard,
     info,
     bendInfo,
@@ -598,8 +623,10 @@ export const blues: View = (root) => {
       h('div', { class: 'seg seg-wrap' }, ...GROOVES.map((g) => h('a', { class: 'btn btn-seg', href: link(`begleitung/${g.id}`) }, t(g.name)))),
     ),
   );
+  hwRaf = requestAnimationFrame(hwFrame);
   return () => {
     disposed = true;
+    cancelAnimationFrame(hwRaf);
     stop();
     if (chordListener) chordListener.stop();
     window.clearInterval(micTimer);

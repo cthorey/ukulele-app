@@ -22,3 +22,28 @@ test('Akkord-Spiel im Takt ohne Mikrofon: Tempo wählen, Tippen auf „Geschafft
   await expect(page.locator('.hw-event').first()).toHaveClass(/perfect|good|late/);
   await expect(page.locator('.stats .score')).not.toHaveText('0');
 });
+
+test('Lied mit Hals: Melodie läuft mit Silben auf den Saiten heran, Akkorde als Griffe, zurück zu den Karten', async ({ page }) => {
+  await page.goto('#/lied/row-row');
+  await page.getByRole('button', { name: 'Hals: Melodie' }).click();
+  await expect(page.locator('.hw-stage .highway')).toBeVisible();
+  await expect(page.locator('.hw-stage .hw-name.syl').first()).toHaveText('Row,');
+  await expect(page.locator('.now-card')).toBeHidden();
+  await page.getByRole('button', { name: 'Hals: Akkorde' }).click();
+  await expect(page.locator('.hw-stage .hw-name').first()).toHaveText('C');
+  await page.reload();
+  // die Wahl bleibt gespeichert
+  await expect(page.getByRole('button', { name: 'Hals: Akkorde' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Karten' }).click();
+  await expect(page.locator('.now-card')).toBeVisible();
+  await expect(page.locator('.hw-stage')).toBeHidden();
+});
+
+test('Blues: beim Akkorde-Begleiten laufen die zwölf Takte als Griffe auf den Saiten heran', async ({ page }) => {
+  await page.goto('#/blues');
+  await expect(page.locator('.highway')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Akkorde · leicht' }).click();
+  await expect(page.locator('.beat-card .highway')).toBeVisible();
+  // zwölf Takte, zweimal hintereinander für die Wiederholung
+  await expect(page.locator('.beat-card .hw-event')).toHaveCount(24);
+});

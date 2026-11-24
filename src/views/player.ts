@@ -2,6 +2,7 @@ import { h, clear, announce, reducedMotion } from '../ui/dom.ts';
 import { icon } from '../ui/icons.ts';
 import { screen, button, toggle, ensureMic, praise, keepAwake, type View } from '../ui/screen.ts';
 import { playableChord } from '../ui/chord-play.ts';
+import { beatHighway, chordEvent, noteEvent, type Highway, type HwEvent } from '../ui/beat-highway.ts';
 import { findSong } from '../music/library.ts';
 import { isOwnId } from '../music/own-songs.ts';
 import { chordChanges, eventAt, type Song } from '../music/song.ts';
@@ -83,6 +84,11 @@ class Player {
   /** E-Bass: Grundtöne statt Griffe, die Begleitung spielt die Akkorde. */
   private bass = notesOnly();
   private bassNotes: BassNote[] = [];
+  /** Hals mit Spur statt Akkordkarten */
+  private hwCard!: HTMLElement;
+  private hw: Highway | null = null;
+  private hwKey = '';
+  private hwRaf = 0;
 
   constructor(root: HTMLElement, song: Song) {
     this.base = song;
@@ -97,6 +103,8 @@ class Player {
     this.drawKeyBox();
     this.showChords(0);
     this.highlight(-1);
+    this.applyTrack();
+    this.hwRaf = requestAnimationFrame(this.hwFrame);
   }
 
   private get spb(): number {
@@ -114,11 +122,13 @@ class Player {
     this.nowCard = h('div', { class: 'chord-card now-card', 'aria-live': 'polite' });
     this.nextCard = h('div', { class: 'chord-card next-card' });
     this.overlay = h('div', { class: 'stage-overlay', hidden: true });
+    this.hwCard = h('div', { class: 'card beat-card hw-stage' });
     this.stage = h(
       'section',
       { class: 'stage', 'aria-label': t('Akkorde') },
       this.nextCard,
       this.nowCard,
+      this.hwCard,
       this.overlay,
     );
     this.stage.addEventListener('click', (e) => {
@@ -159,6 +169,13 @@ class Player {
       'section',
       { class: 'controls' },
       this.playBtn,
+      seg(t('Ansicht'), [
+        { label: t('Karten'), active: this.settings.track === 'cards', on: () => this.setTrack('cards') },
+        { label: t('Hals: Akkorde'), active: this.settings.track === 'chords', on: () => this.setTrack('chords') },
+        ...(this.song.hasMelody || this.bass
+          ? [{ label: this.bass ? t('Hals: Basslinie') : t('Hals: Melodie'), active: this.settings.track === 'melody', on: () => this.setTrack('melody') }]
+          : []),
+      ]),
       seg(t('Modus'), [
         { label: t('Wartet auf mich'), active: this.settings.waitMode, on: () => this.setMode(true) },
         { label: t('Läuft durch'), active: !this.settings.waitMode, on: () => this.setMode(false) },
@@ -596,6 +613,7 @@ class Player {
 
   /** Tonart wählen: Akkorde, Griffbilder, Melodie und Tabulatur wandern mit. */
   private setShift(shift: number): void {
+    this.hwKey = '';
     const n = ((((shift + 6) % 12) + 12) % 12) - 6;
     this.shift = n;
     save((p) => {
@@ -615,6 +633,7 @@ class Player {
   private setBassLine(pattern: 'root' | 'fifth'): void {
     save((p) => (p.settings.bassLine = pattern));
     this.bassNotes = bassLine(this.song, pattern);
+    this.hwKey = '';
     this.showChords(Math.max(0, this.lastIdx), false);
   }
 
@@ -725,7 +744,77 @@ class Player {
     this.setPlayLabel();
   }
 
+  // ---------- Hals mit Spur ----------
+
+  private trackKind(): 'cards' | 'chords' | 'melody' {
+    const k = this.settings.track || 'cards';
+    return k === 'melody' && !this.song.hasMelody && !this.bass ? 'chords' : k;
+  }
+
+  private setTrack(k: 'cards' | 'chords' | 'melody'): void {
+    save((p) => (p.settings.track = k));
+    this.applyTrack();
+  }
+
+  private applyTrack(): void {
+    this.stage.classList.toggle('neck-view', this.trackKind() !== 'cards');
+    if (this.stage.parentElement) this.stage.parentElement.classList.toggle('player-neck', this.trackKind() !== 'cards');
+    this.hwKey = '';
+  }
+
+  /** Ereignisse der Spur: Akkordwechsel mit Griff, Melodietöne mit Silbe oder die Basslinie. */
+  private trackEvents(kind: 'chords' | 'melody'): HwEvent[] {
+    const s = this.song;
+    if (kind === 'chords') {
+      const idx = s.events.flatMap((e, i) => (i === 0 || e.chordChange ? [i] : []));
+      return idx.map((i, k) => {
+        const e = s.events[i];
+        const endBeat = k + 1 < idx.length ? s.events[idx[k + 1]].beat : s.totalBeats;
+        return chordEvent(this.grip(e.chord), e.beat, endBeat - e.beat, this.bass ? bassNote(e.chord) : e.chord);
+      });
+    }
+    if (this.bass)
+      return this.bassNotes.map((n, k) => {
+        const endBeat = k + 1 < this.bassNotes.length ? this.bassNotes[k + 1].beat : s.totalBeats;
+        return noteEvent(n.string, n.fret, n.beat, endBeat - n.beat, noteText(ROOTS[n.midi % 12]));
+      });
+    const out: HwEvent[] = [];
+    s.events.forEach((e) => {
+      if (e.midi === null) return;
+      const pos = tabPosition(e.midi + this.melodyOffset);
+      if (pos) out.push(noteEvent(pos.string, pos.fret, e.beat, e.dur, e.syllable ? e.syllable.replace(/‿/g, ' ') : ''));
+    });
+    return out;
+  }
+
+  private hwFrame = (): void => {
+    const kind = this.trackKind();
+    if (kind !== 'cards') {
+      const w = this.hwCard.clientWidth - 16;
+      const key = [w, kind, this.shift, this.settings.simplify, this.settings.bassLine, this.settings.lefty].join('|');
+      if (w > 0 && key !== this.hwKey) {
+        this.hwKey = key;
+        const s = this.song;
+        // 6/8: ein Schlag ist eine Achtel, also doppelt so viele sichtbar
+        const eighths = s.meter === 6 ? 2 : 1;
+        this.hw = beatHighway(this.trackEvents(kind), {
+          width: w,
+          lefty: this.settings.lefty,
+          meter: s.meter,
+          barOffset: s.pickup ? s.pickup - s.meter : 0,
+          ahead: (kind === 'melody' ? 6 : 8) * eighths,
+          minBeatPx: (kind === 'melody' ? 90 : 50) / eighths,
+        });
+        clear(this.hwCard);
+        this.hwCard.appendChild(this.hw.el);
+      }
+      if (this.hw) this.hw.update(this.phase === 'idle' ? 0 : this.phase === 'done' ? this.song.totalBeats : this.beatNow());
+    }
+    this.hwRaf = requestAnimationFrame(this.hwFrame);
+  };
+
   cleanup = (): void => {
+    cancelAnimationFrame(this.hwRaf);
     window.clearInterval(this.timer);
     cancelAnimationFrame(this.raf);
     this.listener?.stop();

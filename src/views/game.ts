@@ -2,7 +2,7 @@ import { h, clear, announce } from '../ui/dom.ts';
 import { icon } from '../ui/icons.ts';
 import { screen, button, ensureMic, praise, keepAwake, type View } from '../ui/screen.ts';
 import { playableChord } from '../ui/chord-play.ts';
-import { beatHighway, type Highway } from '../ui/beat-highway.ts';
+import { beatHighway, chordEvent, type Highway } from '../ui/beat-highway.ts';
 import { CHORDS, chord } from '../music/chords.ts';
 import { audio, click, successSound } from '../audio/engine.ts';
 import { listenForChord, type ChordListener } from '../audio/listen.ts';
@@ -260,8 +260,7 @@ export const game: View = (root) => {
 
     const beatNow = () => (audio().currentTime - t0) / beatDur;
 
-    const grips = seq.map((c) => chord(c));
-    const starts = seq.map((_, i) => startBeat(i, bpc));
+    const events = seq.map((c, i) => chordEvent(chord(c), startBeat(i, bpc), bpc, shown(c)));
     const laneCard = h('div', { class: 'card beat-card' });
     let hw: Highway | null = null;
     let hwWidth = 0;
@@ -270,7 +269,7 @@ export const game: View = (root) => {
       const w = laneCard.clientWidth - 16;
       if (w <= 0 || w === hwWidth) return;
       hwWidth = w;
-      hw = beatHighway(w, grips, starts, bpc, totalBeats, lefty);
+      hw = beatHighway(events, { width: w, lefty });
       grades.forEach((gr, i) => gr && hw!.mark(i, gr));
       clear(laneCard);
       laneCard.appendChild(hw.el);
@@ -356,10 +355,8 @@ export const game: View = (root) => {
     const frame = () => {
       layout();
       const beat = beatNow();
-      // gegriffen wird der Akkord bis kurz vor dem nächsten Einsatz; einen Schlag vorher erscheint der nächste blass
-      const cur = Math.max(0, Math.min(CHANGES - 1, Math.floor((beat - COUNT_IN + 0.25) / bpc)));
-      const nxt = cur + 1 < CHANGES && beat >= startBeat(cur + 1, bpc) - 1 ? cur + 1 : beat < COUNT_IN ? 0 : -1;
-      hw?.update(beat, beat < COUNT_IN - 1 ? -1 : cur, nxt);
+      hw?.update(beat);
+      const cur = Math.max(0, Math.min(CHANGES - 1, Math.floor((beat - COUNT_IN + 1) / bpc)));
       if (cur !== lastCur) announce(shown(seq[cur]));
       lastCur = cur;
       if (beat < COUNT_IN) msg.textContent = beat < 0 ? t('Hör auf den Klick: eins, zwei, drei, vier …') : String(Math.floor(beat) + 1) + ' …';

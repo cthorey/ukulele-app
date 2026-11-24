@@ -38,6 +38,8 @@ export interface Progress {
     bassLine: 'root' | 'fifth';
     /** E-Bass: die Basslinie zum Mitspielen vorspielen */
     bassDemo: boolean;
+    /** Lied: Akkordkarten oder Hals mit Spur (Griffe bzw. Melodie laufen auf den Saiten heran) */
+    track: 'cards' | 'chords' | 'melody';
   };
 }
 
@@ -149,6 +151,7 @@ const DEFAULTS: Progress = {
     lang: '',
     bassLine: 'root',
     bassDemo: false,
+    track: 'cards',
   },
 };
 

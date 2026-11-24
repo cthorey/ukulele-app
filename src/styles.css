@@ -2148,6 +2148,33 @@ button.list-row:active {
   fill: var(--ink-2);
 }
 
+/* Lied: Hals mit Spur statt der beiden Akkordkarten */
+.stage .hw-stage {
+  display: none;
+  margin: 0;
+}
+
+.stage.neck-view {
+  display: block;
+}
+
+.stage.neck-view .chord-card {
+  display: none;
+}
+
+.stage.neck-view .hw-stage {
+  display: block;
+}
+
+.hw-name.syl {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hw-open-mark.next {
+  stroke-dasharray: 3 3;
+}
+
 .beat-side .row {
   justify-content: center;
 }
@@ -5339,4 +5366,14 @@ button.list-row:active {
   .gauge-ok {
     stroke: none !important;
   }
+}
+
+/* Lied mit Hals und Spur: die Bühne braucht die ganze Breite, der Text steht darunter */
+.player.player-neck {
+  grid-template-columns: 1fr;
+  grid-template-areas: 'stage' 'lyrics' 'controls';
+}
+
+.player.player-neck .lyrics {
+  min-height: 0;
 }
