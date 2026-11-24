@@ -2171,6 +2171,54 @@ button.list-row:active {
   font-weight: 700;
 }
 
+.hw-strum {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.hw-arrow {
+  font: 800 18px var(--font);
+  fill: var(--ink-2);
+}
+
+.hw-event.hit .hw-note:not(.open),
+.hw-event.hit .hw-strum,
+.hw-event.hit .hw-sustain {
+  fill: var(--accent);
+}
+
+.hw-event.hit .hw-note.open {
+  fill: var(--accent-soft);
+}
+
+.hw-event.hit .hw-arrow {
+  fill: var(--accent);
+}
+
+.hw-event.miss .hw-strum {
+  fill: var(--fill);
+}
+
+.hw-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 4px 4px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.hw-head[hidden] {
+  display: none;
+}
+
+.hw-score {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
 .hw-open-mark.next {
   stroke-dasharray: 3 3;
 }

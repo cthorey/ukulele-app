@@ -50,6 +50,18 @@ test('Akkord-Spiel im Takt: erst vorzählen, dann bewertet das Mikrofon den erst
   await expect(page.getByRole('button', { name: 'Im Takt' })).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('Lied mit Hals: das Mikrofon bewertet jeden Anschlag, C zählt, G7 nicht', async ({ page }) => {
+  await page.goto('#/lied/am-weihnachtsbaum');
+  await page.getByRole('button', { name: 'Läuft durch' }).click();
+  await page.getByRole('button', { name: 'Hals: Akkorde' }).click();
+  await page.locator('.btn-play').click();
+  await page.getByRole('button', { name: 'Ja, hör zu!' }).click();
+  await expect(page.locator('.hw-score')).toContainText('getroffen');
+  await expect(page.locator('.hw-stage .hw-event.hit').first()).toBeAttached({ timeout: 12000 });
+  // bei G7 (ab Schlag 8) hört das Mikrofon nur C: diese Anschläge gelten als verpasst
+  await expect(page.locator('.hw-stage .hw-event.miss').first()).toBeAttached({ timeout: 15000 });
+});
+
 test('Blues: Akkorde begleiten – das Mikrofon hört das C im ersten Takt', async ({ page }) => {
   await page.goto('#/blues');
   await page.getByRole('button', { name: 'Akkorde · leicht' }).click();

@@ -504,6 +504,9 @@ export const FR: Record<string, string> = {
   'Löschen': 'Supprimer',
   'Lied bearbeiten': 'Modifier la chanson',
   // src/views/player.ts
+  'Mit Kopfhörern hört das Mikrofon nur dich.': 'Avec un casque, le micro n’entend que toi.',
+  '{a} von {b} getroffen': '{a} sur {b} réussis',
+  'Geschafft: {a} von {b} getroffen!': 'Terminé : {a} sur {b} réussis !',
   'Ansicht': 'Affichage',
   'Karten': 'Cartes',
   'Hals: Akkorde': 'Manche : accords',

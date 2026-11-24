@@ -31,6 +31,9 @@ const TEMPOS = [
 ];
 
 const WALK = [0, 4, 7, 9, 10, 9, 7, 4];
+
+/** Erster Anschlag im Schlagmuster (meist die Eins). */
+const firstStep = (st: string) => Math.max(0, st.search(/[^-]/));
 /** Beim freien Spiel mehr vom Hals zeigen als bei den Vorgaben. */
 const FREE_FRETS = 5;
 
@@ -104,8 +107,22 @@ export const blues: View = (root) => {
       if (w > 0 && k !== hwKey) {
         hwKey = k;
         const bars = compBars(key, comp);
-        // jeder Takt eine eigene Spalte, auch wenn der Akkord bleibt: jeder Takt wird neu angeschlagen
-        const events: HwEvent[] = bars.map((name, i) => chordEvent(compGrip(name), i * 4, 4, i > 0 && name === bars[i - 1] ? '' : name));
+        // jeder Anschlag des Schlagmusters eine Spalte, im Shuffle das „und“ spät; beim Wechsel mit Bundzahlen
+        const st = compStrum(comp);
+        const events: HwEvent[] = [];
+        bars.forEach((name, i) => {
+          for (let step = 0; step < 8; step++) {
+            const c = st.charAt(step);
+            if (c === '-') continue;
+            const e = chordEvent(compGrip(name), i * 4 + Math.floor(step / 2) + (step % 2 ? SWING : 0), 0, '');
+            e.strum = c === 'U' ? 'U' : 'D';
+            // Bundzahlen nur beim ersten Anschlag eines neuen Akkords, sonst ein Anschlagbalken
+            e.repeat = !(step === firstStep(st) && (i === 0 || bars[i - 1] !== name));
+            if (!e.repeat) e.label = name;
+            events.push(e);
+          }
+        });
+        events.forEach((e, k) => (e.dur = (k + 1 < events.length ? events[k + 1].beat : 48) - e.beat));
         hw = beatHighway(events, { width: w, lefty, loop: 48, ahead: 8 });
         clear(hwCard);
         hwCard.appendChild(hw.el);

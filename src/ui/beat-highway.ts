@@ -14,6 +14,10 @@ export interface HwEvent {
   fingers?: number[];
   /** einzelner Ton: nicht gespielte Saiten bekommen kein ×, auf dem Hals keine leeren Ringe */
   single?: boolean;
+  /** derselbe Griff noch einmal angeschlagen: ein Anschlagbalken statt der Bundzahlen */
+  repeat?: boolean;
+  /** Anschlagrichtung unter den Saiten: D = runter, U = rauf */
+  strum?: 'D' | 'U';
 }
 
 export interface HighwayOptions {
@@ -35,6 +39,7 @@ export interface Highway {
   /** Jedes Bild: Position in Schlägen. */
   update(beat: number): void;
   mark(i: number, cls: string): void;
+  unmark(cls: string): void;
 }
 
 export function chordEvent(c: Chord, beat: number, dur: number, label = c.name): HwEvent {
@@ -72,7 +77,8 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
   const gap = n > 4 ? 28 : 38;
   const top = 44;
   const span = gap * (n - 1);
-  const height = top + span + 30;
+  const strums = events.some((e) => !!e.strum);
+  const height = top + span + (strums ? 52 : 30);
   let maxFret = 4;
   events.forEach((e) => e.frets.forEach((f) => (maxFret = Math.max(maxFret, f))));
   const frets = Math.min(maxFret, 12);
@@ -104,7 +110,7 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
   }
   g.appendChild(s('rect', { x: x0 - 4, y: top - 12, width: 6, height: span + 24, class: 'fb-nut' }));
   for (let f = 1; f <= frets; f++) g.appendChild(s('rect', { x: x0 + fw * f - 1, y: top - 12, width: 2.5, height: span + 24, class: 'fb-fret' }));
-  for (let f = 1; f <= frets; f++) g.appendChild(text({ x: fretX(f), y: height - 4, class: 'fb-num', 'text-anchor': 'middle' }, String(f)));
+  for (let f = 1; f <= frets; f++) g.appendChild(text({ x: fretX(f), y: top + span + 26, class: 'fb-num', 'text-anchor': 'middle' }, String(f)));
   for (let i = 0; i < n; i++) {
     g.appendChild(s('line', { x1: openX - 12, y1: yOf(i), x2: width, y2: yOf(i), class: 'fb-string' }));
     g.appendChild(text({ x: 2, y: yOf(i) + 5, class: 'fb-label' }, STRINGS[i].name));
@@ -131,10 +137,18 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
       groups[i].push(ev);
       e.frets.forEach((f, string) => {
         if (f < 0) return;
-        ev.appendChild(s('rect', { x, y: yOf(string) - 5, width: Math.max(r, e.dur * ppb - 14), height: 10, rx: 5, class: 'hw-sustain' }));
+        ev.appendChild(s('rect', { x, y: yOf(string) - 5, width: Math.max(r, e.dur * ppb - (e.dur * ppb > 30 ? 14 : 4)), height: 10, rx: 5, class: 'hw-sustain' }));
       });
+      if (e.repeat) {
+        const played = e.frets.map((f, i) => (f >= 0 ? i : -1)).filter((i) => i >= 0);
+        const hi = yOf(Math.max.apply(null, played));
+        const lo = yOf(Math.min.apply(null, played));
+        ev.appendChild(s('rect', { x: x - 5, y: hi - 9, width: 10, height: lo - hi + 18, rx: 5, class: 'hw-strum' }));
+      }
+      if (e.strum) ev.appendChild(text({ x, y: top + span + 34, 'text-anchor': 'middle', class: 'hw-arrow' }, e.strum === 'U' ? '↑' : '↓'));
       e.frets.forEach((f, string) => {
         const y = yOf(string);
+        if (e.repeat) return;
         if (f < 0) {
           if (!e.single) ev.appendChild(text({ x, y: y + 5, 'text-anchor': 'middle', class: 'hw-mute' }, '×'));
           return;
@@ -187,6 +201,9 @@ export function beatHighway(events: HwEvent[], opts: HighwayOptions): Highway {
     },
     mark(i, cls) {
       groups[i].forEach((ev) => ev.classList.add(cls));
+    },
+    unmark(cls) {
+      groups.forEach((gs) => gs.forEach((ev) => ev.classList.remove(cls)));
     },
   };
 }

@@ -2,7 +2,10 @@ import { h, clear, announce, reducedMotion } from '../ui/dom.ts';
 import { icon } from '../ui/icons.ts';
 import { screen, button, toggle, ensureMic, praise, keepAwake, type View } from '../ui/screen.ts';
 import { playableChord } from '../ui/chord-play.ts';
-import { beatHighway, chordEvent, noteEvent, type Highway, type HwEvent } from '../ui/beat-highway.ts';
+import { beatHighway, chordEvent, eventIndexAt, noteEvent, type Highway, type HwEvent } from '../ui/beat-highway.ts';
+import { openMic } from '../audio/mic.ts';
+import { detectPitchIn } from '../audio/pitch.ts';
+import { freqToMidi } from '../music/notes.ts';
 import { findSong } from '../music/library.ts';
 import { isOwnId } from '../music/own-songs.ts';
 import { chordChanges, eventAt, type Song } from '../music/song.ts';
@@ -16,7 +19,7 @@ import { capoHint, keyLabel, melodyOffset, originalShift, shiftToKey, songKey, s
 import { simplifications, simplifySong } from '../music/simplify.ts';
 import { diagnose } from '../music/diagnose.ts';
 import { noteText, ordinal, t, tk, tParts } from '../i18n.ts';
-import { notesOnly } from '../music/instrument.ts';
+import { instrument, notesOnly } from '../music/instrument.ts';
 import { bassLine, bassPosition, type BassNote } from '../music/bassline.ts';
 import { ROOTS } from '../music/chords.ts';
 
@@ -89,6 +92,19 @@ class Player {
   private hw: Highway | null = null;
   private hwKey = '';
   private hwRaf = 0;
+  private hwHead!: HTMLElement;
+  private hwScoreEl!: HTMLElement;
+  private hwEvents: HwEvent[] = [];
+  /** je Ereignis: Akkordname (Akkord-Spur) bzw. MIDI-Ton (Melodie-Spur) */
+  private hwChord: string[] = [];
+  private hwMidi: number[] = [];
+  /** getroffen (true), verpasst (false), offen (null) */
+  private hwScore: (boolean | null)[] = [];
+  private missPtr = 0;
+  private trackListening = false;
+  private trackListener: ChordListener | null = null;
+  private trackExpected = '';
+  private pitchTimer = 0;
 
   constructor(root: HTMLElement, song: Song) {
     this.base = song;
@@ -122,6 +138,8 @@ class Player {
     this.nowCard = h('div', { class: 'chord-card now-card', 'aria-live': 'polite' });
     this.nextCard = h('div', { class: 'chord-card next-card' });
     this.overlay = h('div', { class: 'stage-overlay', hidden: true });
+    this.hwScoreEl = h('span', { class: 'hw-score', 'aria-live': 'polite' });
+    this.hwHead = h('div', { class: 'hw-head', hidden: true }, h('span', { class: 'small' }, t('Mit Kopfhörern hört das Mikrofon nur dich.')), this.hwScoreEl);
     this.hwCard = h('div', { class: 'card beat-card hw-stage' });
     this.stage = h(
       'section',
@@ -406,7 +424,13 @@ class Player {
       this.enterWait(0);
     } else {
       this.stopBeat = Infinity;
+      this.stopTrackListen();
+      // Hals mit Spur: zuhören und jeden Anschlag bzw. Ton bewerten
+      if (this.trackKind() !== 'cards') this.micOk = await ensureMic();
+      this.hwKey = '';
+      this.hwHead.hidden = true;
       this.run(0, true);
+      this.startTrackListen();
     }
   }
 
@@ -446,19 +470,21 @@ class Player {
       const strong = s.meter === 6 ? barPos % 3 === 0 : true;
       if (!strong) continue;
       if (b < 0 || this.settings.clickOn) click(t(b), barPos === 0, b < 0 ? 0.6 : 0.35);
-      if (b >= 0 && this.settings.backing) {
+      // wer mit dem Mikrofon die Akkorde spielt, hört sie nicht auch noch vom Gerät
+      if (b >= 0 && this.settings.backing && !(this.trackListening && this.trackKind() === 'chords')) {
         const ev = s.events[eventAt(s, b)];
         strum(ev.chord, t(b), barPos === 0 ? 0.3 : 0.2);
       }
     }
     // Melodie
-    if (this.settings.melody)
+    const ownPart = this.trackListening && this.trackKind() === 'melody';
+    if (this.settings.melody && !(ownPart && !this.bass))
       for (const e of s.events) {
         if (e.midi === null || e.beat < this.scheduledTo - 1e-6 || e.beat >= until) continue;
         melodyNote(e.midi + this.melodyOffset, t(e.beat), 0.55);
       }
     // E-Bass: die Basslinie zum Mitspielen
-    if (this.bass && this.settings.bassDemo)
+    if (this.bass && this.settings.bassDemo && !ownPart)
       for (const n of this.bassNotes) {
         if (n.beat < this.scheduledTo - 1e-6 || n.beat >= until) continue;
         pluck(n.midi, t(n.beat), 0.75);
@@ -554,6 +580,10 @@ class Player {
     this.phase = 'done';
     this.listener?.stop();
     this.listener = null;
+    if (this.trackListening) {
+      this.stopTrackListen();
+      this.updateScore(true);
+    }
     this.highlight(this.song.events.length - 1);
     const stars = this.settings.waitMode ? 1 : this.settings.speed >= 1 ? 3 : 2;
     const improved = giveStars(this.song.id, stars);
@@ -731,6 +761,8 @@ class Player {
   }
 
   private reset(): void {
+    this.stopTrackListen();
+    this.hwHead.hidden = true;
     window.clearInterval(this.timer);
     cancelAnimationFrame(this.raf);
     this.listener?.stop();
@@ -752,6 +784,8 @@ class Player {
   }
 
   private setTrack(k: 'cards' | 'chords' | 'melody'): void {
+    this.stopTrackListen();
+    this.hwHead.hidden = true;
     save((p) => (p.settings.track = k));
     this.applyTrack();
   }
@@ -762,29 +796,125 @@ class Player {
     this.hwKey = '';
   }
 
-  /** Ereignisse der Spur: Akkordwechsel mit Griff, Melodietöne mit Silbe oder die Basslinie. */
+  /**
+   * Ereignisse der Spur: jeder Anschlag der Begleitung als Griff (beim Wechsel mit Bundzahlen, danach als Anschlagbalken),
+   * die Melodietöne mit ihrer Silbe oder die Basslinie. Füllt nebenbei hwChord/hwMidi für das Zuhören.
+   */
   private trackEvents(kind: 'chords' | 'melody'): HwEvent[] {
     const s = this.song;
-    if (kind === 'chords') {
-      const idx = s.events.flatMap((e, i) => (i === 0 || e.chordChange ? [i] : []));
-      return idx.map((i, k) => {
-        const e = s.events[i];
-        const endBeat = k + 1 < idx.length ? s.events[idx[k + 1]].beat : s.totalBeats;
-        return chordEvent(this.grip(e.chord), e.beat, endBeat - e.beat, this.bass ? bassNote(e.chord) : e.chord);
-      });
-    }
-    if (this.bass)
-      return this.bassNotes.map((n, k) => {
-        const endBeat = k + 1 < this.bassNotes.length ? this.bassNotes[k + 1].beat : s.totalBeats;
-        return noteEvent(n.string, n.fret, n.beat, endBeat - n.beat, noteText(ROOTS[n.midi % 12]));
-      });
     const out: HwEvent[] = [];
+    this.hwChord = [];
+    this.hwMidi = [];
+    if (kind === 'chords') {
+      // wie die Begleitung in schedule(): jeder Schlag, im 6/8-Takt nur die zwei Hauptschläge
+      const step = s.meter === 6 ? 3 : 1;
+      let prev = '';
+      for (let b = 0; b < s.totalBeats; b++) {
+        const barPos = (((b - (s.pickup ? s.pickup - s.meter : 0)) % s.meter) + s.meter) % s.meter;
+        if (s.meter === 6 && barPos % 3 !== 0) continue;
+        const name = s.events[eventAt(s, b)].chord;
+        const e = chordEvent(this.grip(name), b, Math.min(step, s.totalBeats - b), name === prev ? '' : this.bass ? bassNote(name) : name);
+        e.repeat = name === prev;
+        e.strum = 'D';
+        out.push(e);
+        this.hwChord.push(name);
+        prev = name;
+      }
+      return out;
+    }
+    if (this.bass) {
+      this.bassNotes.forEach((n, k) => {
+        const endBeat = k + 1 < this.bassNotes.length ? this.bassNotes[k + 1].beat : s.totalBeats;
+        out.push(noteEvent(n.string, n.fret, n.beat, endBeat - n.beat, noteText(ROOTS[n.midi % 12])));
+        this.hwMidi.push(n.midi);
+      });
+      return out;
+    }
     s.events.forEach((e) => {
       if (e.midi === null) return;
-      const pos = tabPosition(e.midi + this.melodyOffset);
-      if (pos) out.push(noteEvent(pos.string, pos.fret, e.beat, e.dur, e.syllable ? e.syllable.replace(/‿/g, ' ') : ''));
+      const midi = e.midi + this.melodyOffset;
+      const pos = tabPosition(midi);
+      if (!pos) return;
+      out.push(noteEvent(pos.string, pos.fret, e.beat, e.dur, e.syllable ? e.syllable.replace(/‿/g, ' ') : ''));
+      this.hwMidi.push(midi);
     });
     return out;
+  }
+
+  /** Wie lange nach dem Einsatz ein Anschlag oder Ton noch zählt (in Schlägen). */
+  private hwWindow(i: number): number {
+    return Math.max(0.5, Math.min(this.hwEvents[i].dur, 1.2));
+  }
+
+  private updateScore(final = false): void {
+    let hits = 0;
+    let judged = 0;
+    this.hwScore.forEach((v) => {
+      if (v !== null) judged++;
+      if (v) hits++;
+    });
+    this.hwScoreEl.textContent = final
+      ? t('Geschafft: {a} von {b} getroffen!', { a: hits, b: this.hwEvents.length })
+      : t('{a} von {b} getroffen', { a: hits, b: judged });
+  }
+
+  /** Gehört: das früheste offene Ereignis im Zeitfenster, das passt, gilt als getroffen. */
+  private trackHit(match: (i: number) => boolean): void {
+    if (this.phase !== 'playing' || !this.hw) return;
+    const beat = this.beatNow();
+    for (let i = Math.max(0, this.missPtr - 2); i < this.hwEvents.length; i++) {
+      const e = this.hwEvents[i];
+      if (e.beat - 0.4 > beat) break;
+      if (this.hwScore[i] === null && beat <= e.beat + this.hwWindow(i) && match(i)) {
+        this.hwScore[i] = true;
+        this.hw.mark(i, 'hit');
+        this.updateScore();
+        return;
+      }
+    }
+  }
+
+  private startTrackListen(): void {
+    const kind = this.trackKind();
+    if (!this.micOk || kind === 'cards') return;
+    this.trackListening = true;
+    this.hwHead.hidden = false;
+    this.updateScore();
+    if (kind === 'chords') {
+      this.trackExpected = this.hwChord[0] || '';
+      void listenForChord(this.trackExpected, { onHit: (name) => this.trackHit((i) => this.hwChord[i] === name) }, this.easyGrip(this.trackExpected)).then(
+        (l) => {
+          if (this.trackListening && !this.trackListener) this.trackListener = l;
+          else l.stop();
+        },
+        () => undefined,
+      );
+      return;
+    }
+    void openMic().then(
+      (mic) => {
+        if (!this.trackListening) return;
+        const buf = new Float32Array(this.bass ? 4096 : 2048);
+        const tuner = instrument().tuner;
+        this.pitchTimer = window.setInterval(() => {
+          if (this.phase !== 'playing') return;
+          mic.timeData(buf);
+          const p = detectPitchIn(buf, mic.sampleRate, tuner.minHz, 1400);
+          if (!p || p.clarity < 0.88) return;
+          const midi = Math.round(freqToMidi(p.freq));
+          // die Oktave ist egal: kleine Mikrofone hören oft den Oberton
+          this.trackHit((i) => (((this.hwMidi[i] - midi) % 12) + 12) % 12 === 0);
+        }, 40);
+      },
+      () => undefined,
+    );
+  }
+
+  private stopTrackListen(): void {
+    this.trackListening = false;
+    this.trackListener?.stop();
+    this.trackListener = null;
+    window.clearInterval(this.pitchTimer);
   }
 
   private hwFrame = (): void => {
@@ -797,7 +927,10 @@ class Player {
         const s = this.song;
         // 6/8: ein Schlag ist eine Achtel, also doppelt so viele sichtbar
         const eighths = s.meter === 6 ? 2 : 1;
-        this.hw = beatHighway(this.trackEvents(kind), {
+        this.hwEvents = this.trackEvents(kind);
+        this.hwScore = this.hwEvents.map(() => null);
+        this.missPtr = 0;
+        this.hw = beatHighway(this.hwEvents, {
           width: w,
           lefty: this.settings.lefty,
           meter: s.meter,
@@ -806,7 +939,28 @@ class Player {
           minBeatPx: (kind === 'melody' ? 90 : 50) / eighths,
         });
         clear(this.hwCard);
+        this.hwCard.appendChild(this.hwHead);
         this.hwCard.appendChild(this.hw.el);
+        if (this.trackListening) this.updateScore();
+      }
+      if (this.hw && this.trackListening && this.phase === 'playing') {
+        const beat = this.beatNow();
+        while (this.missPtr < this.hwEvents.length && beat > this.hwEvents[this.missPtr].beat + this.hwWindow(this.missPtr)) {
+          if (this.hwScore[this.missPtr] === null) {
+            this.hwScore[this.missPtr] = false;
+            this.hw.mark(this.missPtr, 'miss');
+            this.updateScore();
+          }
+          this.missPtr++;
+        }
+        if (kind === 'chords' && this.trackListener) {
+          const idx = eventIndexAt(this.hwEvents, beat + 0.4);
+          const name = idx >= 0 ? this.hwChord[idx] : '';
+          if (name && name !== this.trackExpected) {
+            this.trackExpected = name;
+            this.trackListener.setExpected(name, this.easyGrip(name));
+          }
+        }
       }
       if (this.hw) this.hw.update(this.phase === 'idle' ? 0 : this.phase === 'done' ? this.song.totalBeats : this.beatNow());
     }
@@ -815,6 +969,7 @@ class Player {
 
   cleanup = (): void => {
     cancelAnimationFrame(this.hwRaf);
+    this.stopTrackListen();
     window.clearInterval(this.timer);
     cancelAnimationFrame(this.raf);
     this.listener?.stop();

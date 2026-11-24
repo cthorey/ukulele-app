@@ -501,6 +501,9 @@ export const EN: Record<string, string> = {
   'Löschen': 'Delete',
   'Lied bearbeiten': 'Edit Song',
   // src/views/player.ts
+  'Mit Kopfhörern hört das Mikrofon nur dich.': 'With headphones the microphone hears only you.',
+  '{a} von {b} getroffen': '{a} of {b} hit',
+  'Geschafft: {a} von {b} getroffen!': 'Done: {a} of {b} hit!',
   'Ansicht': 'View',
   'Karten': 'Cards',
   'Hals: Akkorde': 'Neck: chords',
