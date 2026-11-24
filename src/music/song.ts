@@ -1,7 +1,7 @@
 import { tk } from '../i18n.ts';
 import { parsePitch } from './notes.ts';
 
-export type Category = 'kinder' | 'jahreszeiten' | 'weihnachten' | 'lagerfeuer' | 'english' | 'eigene';
+export type Category = 'kinder' | 'jahreszeiten' | 'weihnachten' | 'lagerfeuer' | 'english' | 'hawaii' | 'eigene';
 
 export const CATEGORIES: { id: Category; title: string }[] = [
   { id: 'kinder', title: tk('Kinderlieder') },
@@ -9,6 +9,7 @@ export const CATEGORIES: { id: Category; title: string }[] = [
   { id: 'jahreszeiten', title: tk('Frühling bis Herbst') },
   { id: 'weihnachten', title: tk('Weihnachten') },
   { id: 'english', title: tk('English Songs') },
+  { id: 'hawaii', title: tk('Hawaiʻi') },
   { id: 'eigene', title: tk('Eigene Lieder') },
 ];
 

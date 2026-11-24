@@ -119,6 +119,7 @@ export const EN: Record<string, string> = {
   'Lagerfeuer & Wandern': 'Campfire & hiking',
   'Frühling bis Herbst': 'Spring to autumn',
   'Weihnachten': 'Christmas',
+  'Hawaiʻi': 'Hawaiʻi',
   'English Songs': 'English songs',
   'Eigene Lieder': 'My own songs',
   // Weihnachtslieder (src/site/pages.ts, src/views/home.ts, src/main.ts)
