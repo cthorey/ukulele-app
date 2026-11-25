@@ -1,4 +1,5 @@
 import { test, expect, type Page, navigationNoise } from './fixtures.ts';
+import { LOCAL_SONGS } from '../../src/music/songs-local.ts';
 
 const VIEWS = ['', 'lieder', 'lied/alle-meine-entchen', 'akkorde', 'akkord/G7', 'spiel', 'stimmen', 'rhythmus', 'sterne', 'aufnahme', 'blues', 'detektiv', 'eigenes-lied', 'teilen/0kaputt'];
 
@@ -38,7 +39,8 @@ test('Startseite führt zu den Liedern und zurück', async ({ page }) => {
   await expect(page.locator('.brand-inst')).toHaveText('Ukulele');
   await page.getByRole('link', { name: /Lieder spielen/ }).click();
   await expect(page.getByRole('heading', { name: 'Lieder', exact: true })).toBeVisible();
-  await expect(page.locator('.song-card')).toHaveCount(103);
+  // dazu die Lieder, die nur in der eigenen Arbeitskopie leben
+  await expect(page.locator('.song-card')).toHaveCount(105 + LOCAL_SONGS.length);
   await expect(page.locator('.song-card .feature[title^="Melodie"]')).toHaveCount(65);
   await page.getByRole('button', { name: /^Weihnachten/ }).click();
   await expect(page.locator('.song-card')).toHaveCount(35);
